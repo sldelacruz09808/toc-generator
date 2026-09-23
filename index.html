@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B5C63">
+<meta name="description" content="Builds a Table of Contents from a Hawai‘i or federal brief, entirely in your browser.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<title>Dunn’s Table of Contents Generator</title>
+<style>
+  #lockScreen{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;
+    background:#11161c;color:#EEF2F1;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:center;padding:24px}
+  #lockScreen .box{max-width:420px}
+  #lockScreen h2{font-size:20px;margin:0 0 10px}
+  #lockScreen p{color:#9BA8B8;line-height:1.5;margin:0 0 6px}
+</style>
+</head>
+<body>
+<div id="lockScreen"><div class="box">
+  <h2>Access unavailable</h2>
+  <p id="lockMessage">Access to Dunn’s Table of Contents Generator has expired. Please contact the administrator.</p>
+</div></div>
+
+<title>Dunn’s Table of Contents Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+:root{
+  --bg:#EEF2F1; --surface:#FFFFFF; --surface2:#F5F8F7; --ink:#14272B; --muted:#5A6E72; --line:#D3DDDC;
+  --accent:#0B5C63; --accent-ink:#FFFFFF; --accent-soft:#DCEEEE; --warn:#8A5A00; --warn-bg:#FBF1D8; --bad:#A4262C;
+  --focus:#0B5C63;
+  --serif:"Source Serif 4","Iowan Old Style",Georgia,serif; --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D191B; --surface:#14252A; --surface2:#1A2E33; --ink:#E4EEED; --muted:#93A9AD; --line:#274045;
+    --accent:#5CC8CF; --accent-ink:#082A2E; --accent-soft:#1B3C41; --warn:#F0C466; --warn-bg:#3A2F14; --bad:#FF8C92; --focus:#5CC8CF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D191B; --surface:#14252A; --surface2:#1A2E33; --ink:#E4EEED; --muted:#93A9AD; --line:#274045;
+  --accent:#5CC8CF; --accent-ink:#082A2E; --accent-soft:#1B3C41; --warn:#F0C466; --warn-bg:#3A2F14; --bad:#FF8C92; --focus:#5CC8CF;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;padding-inline:16px;padding-block:0 48px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1240px;margin-inline:auto}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:20px 18px}
+.brand h1{font-family:var(--serif);font-weight:700;font-size:26px;line-height:1.15;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.lock{display:inline-flex;align-items:center;gap:6px}
+.lock svg{width:14px;height:14px;flex:none}
+
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:500;min-height:38px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
+.btn.small{padding:4px 10px;min-height:30px;font-size:13px}
+.btn.ghost{background:transparent}
+
+.layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:920px){.layout{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:20px;min-width:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.panel h2{font-family:var(--serif);font-size:18px;margin:0 0 4px;font-weight:600}
+.panel .sub{margin:0 0 14px;color:var(--muted);font-size:13px}
+.stephead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;border:1.5px dashed var(--line);border-radius:8px;padding:22px 16px;background:var(--surface2);cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop strong{font-weight:600}
+.drop small{color:var(--muted)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.status{margin-top:12px;font-size:13px;color:var(--muted);min-height:20px}
+.status.err{color:var(--bad)}
+.bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 18px;margin-top:16px}
+.opt{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.opt>span{font-weight:500}
+.opt small{color:var(--muted);font-size:12px;line-height:1.35}
+.opt input[type=number],.opt input[type=text],.opt select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 8px;min-height:34px;width:100%}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.check small{display:block;color:var(--muted);font-size:12px}
+
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:13px;margin:0 0 12px}
+.note.ex{background:var(--warn-bg);border-color:transparent;color:var(--warn)}
+
+.colhead,.row{display:grid;grid-template-columns:22px 40px minmax(0,1fr) 56px 100px auto;gap:8px;align-items:start}
+.colhead{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 6px 6px;border-bottom:1px solid var(--line)}
+.rows{display:flex;flex-direction:column}
+.row{padding:8px 6px;border-bottom:1px solid var(--line)}
+.row.off{opacity:.55}
+.row .lab{font-family:var(--mono);font-size:13px;padding-top:7px;text-align:right;color:var(--muted);white-space:nowrap}
+.row .on{margin-top:8px;accent-color:var(--accent);width:16px;height:16px}
+.row textarea,.row input[type=text],.row select{width:100%;border:1px solid transparent;background:transparent;border-radius:5px;padding:5px 7px;min-height:32px;resize:none;overflow:hidden;line-height:1.4}
+.row textarea:hover,.row input[type=text]:hover,.row select:hover{border-color:var(--line)}
+.row textarea:focus,.row input[type=text]:focus,.row select:focus{border-color:var(--accent);background:var(--surface)}
+.row input.pg{text-align:right;font-family:var(--mono)}
+.row select{font-size:12px;padding-inline:4px}
+.acts{display:flex;gap:2px}
+.icon{appearance:none;border:0;background:transparent;border-radius:5px;width:24px;height:30px;cursor:pointer;color:var(--muted);font-size:14px;line-height:1}
+.icon:hover{background:var(--surface2);color:var(--ink)}
+.tag{display:inline-block;margin:0 0 0 2px;font-size:11px;color:var(--warn);background:var(--warn-bg);border-radius:4px;padding:1px 6px}
+.rowtext{min-width:0}
+.empty{padding:26px 8px;text-align:center;color:var(--muted)}
+@media (max-width:640px){
+  .colhead{display:none}
+  .row{grid-template-columns:24px 40px minmax(0,1fr) 64px}
+  .row .lvl{grid-column:2 / 4}
+  .row .acts{grid-column:1 / -1;justify-content:flex-end}
+}
+
+.preview{position:sticky;top:12px}
+@media (max-width:920px){.preview{position:static}}
+.sheets{display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 150px);overflow:auto;padding:4px;background:var(--surface2);border-radius:8px}
+@media (max-width:920px){.sheets{max-height:none}}
+.sheet{width:100%;height:auto;display:block;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18),0 6px 18px rgba(0,0,0,.12)}
+.sheet text{fill:#000}
+.sheet line{stroke:#000}
+.cap{font-size:12px;color:var(--muted);text-align:center;margin-top:-6px}
+.hint{color:var(--muted);font-size:12.5px;margin:12px 0 0}
+
+.steps{margin:0 0 12px;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface2)}
+details summary{cursor:pointer;font-size:13px;color:var(--accent);margin-bottom:8px}
+#linkMsg{margin-top:10px;font-size:13px;color:var(--muted)}
+#linkMsg.ok{color:var(--accent)}
+#linkMsg.err{color:var(--bad);font-weight:500}
+#linkMsg ul{margin:6px 0 0;padding-left:18px}
+.fname{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+code{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.panel .tools{margin-top:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:13px;max-width:calc(100% - 32px);z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Dunn’s Table of Contents Generator</h1>
+      <p class="lock"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Runs in this browser tab. Your PDF is read on this computer and is never uploaded.</p>
+    </div>
+    <button class="btn primary" id="dlTop" type="button">Download Word file</button>
+  </header>
+
+  <div class="layout">
+    <div class="col">
+      <section class="panel" aria-labelledby="h-up">
+        <h2 id="h-up">1. Choose your brief (PDF)</h2>
+        <p class="sub">Write the brief in Word, save it as a PDF, then drop the PDF here.</p>
+        <label class="drop" id="drop" for="file">
+          <strong id="dropTitle">Drop a PDF here, or click to choose one</strong>
+          <small id="dropSub">PDF files only</small>
+          <input id="file" type="file" accept="application/pdf,.pdf">
+        </label>
+        <div class="bar" id="barWrap" hidden><i id="bar"></i></div>
+        <div class="status" id="status" role="status" aria-live="polite"></div>
+
+        <div class="opts">
+          <label class="opt" for="start"><span>The brief’s page 1 is PDF page</span>
+            <input id="start" type="number" min="1" value="1" inputmode="numeric">
+            <small>Use 2 or more if a cover page or old table comes first. Page numbers count from here.</small></label>
+          <label class="opt" for="source"><span>Find headings from</span>
+            <select id="source">
+              <option value="auto">Auto: PDF bookmarks, else page text</option>
+              <option value="scan">Page text (I., A., 1., a.)</option>
+              <option value="bookmarks">PDF bookmarks only</option>
+            </select>
+            <small>Word headings saved as a PDF often carry bookmarks.</small></label>
+          <label class="check"><input id="renumber" type="checkbox" checked><span>Renumber headings I, II, III … (no limit)<small>Then A, B, C … then 1, 2, 3 … then a, b, c …</small></span></label>
+          <label class="check"><input id="footer" type="checkbox"><span>Small roman page numbers (i, ii …) at the bottom of the table<small>Off by default, like your sample.</small></span></label>
+          
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-rows">
+        <div class="stephead"><h2 id="h-rows">2. Check the headings</h2>
+          <div class="tools">
+            <button class="btn small" id="allOn" type="button">Tick all</button>
+            <button class="btn small" id="allOff" type="button">Untick all</button>
+            <button class="btn small" id="addEnd" type="button">+ Add heading</button>
+          </div></div>
+        <p class="sub">Fix wording, level or page number. Unticked lines stay out of the table.</p>
+        <div id="notes"></div>
+        <div class="colhead" aria-hidden="true"><span></span><span style="text-align:right">No.</span><span>Heading</span><span style="text-align:right">Page(s)</span><span>Level</span><span></span></div>
+        <div class="rows" id="rows"></div>
+      </section>
+    </div>
+
+    <aside class="col preview" aria-labelledby="h-pv">
+      <section class="panel">
+        <div class="stephead"><h2 id="h-pv">3. Your Table of Contents</h2>
+          <button class="btn primary" id="dl" type="button">Download Word file</button></div>
+        <p class="sub" id="pvsub">Letter size, 1″ margins, Times New Roman 12 pt.</p>
+        <div class="sheets" id="sheets"></div>
+        <p class="hint">The Word file has real dot-leader tab stops, so you can still edit it. Opens in Word as a .docx.</p>
+      </section>
+      <section class="panel" aria-labelledby="h-mac">
+        <h2 id="h-mac">4. Clickable page numbers (optional)</h2>
+        <p class="sub"><b>Do this last.</b> Choose the Word file your PDF was saved from. The app adds the Table of Contents to a <b>copy</b> of it, and every page number becomes a Ctrl + click link to its heading. Your original file is not changed.</p>
+        <p class="sub">Where should the table go? Type <code>[[TOC]]</code> on its own line in your Word file. If there is none, the table goes at the very top, followed by a page break.</p>
+        <input type="file" id="docxFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+        <div class="tools"><button class="btn" id="pickDocx" type="button">Choose Word file (.docx)</button><span class="fname" id="docxName">No Word file chosen</span></div>
+        <div class="tools"><button class="btn primary" id="dlLinked" type="button" disabled>Download brief with clickable table</button></div>
+        <div id="linkMsg" role="status" aria-live="polite"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="./vendor/pdf.min.js"></script>
+<script src="./vendor/jszip.min.js"></script>
+<script>
+/* ===== Dunn’s Table of Contents Generator — core (pure logic, no DOM) ===== */
+var TOC = (function () {
+  'use strict';
+
+  /* ---------- numbering ---------- */
+  var ROM = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  function toRoman(n) {
+    // unbounded: past 3999 the thousands simply keep stacking M's
+    var s = '';
+    if (n >= 4000) { s = new Array(Math.floor(n / 1000) + 1).join('M'); n = n % 1000; }
+    for (var i = 0; i < ROM.length; i++) while (n >= ROM[i][0]) { s += ROM[i][1]; n -= ROM[i][0]; }
+    return s;
+  }
+  function fromRoman(s) {
+    var v = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 }, t = 0;
+    for (var i = 0; i < s.length; i++) {
+      var a = v[s[i]], b = v[s[i + 1]] || 0;
+      if (!a) return 0;
+      t += a < b ? -a : a;
+    }
+    return t;
+  }
+  function validRoman(s) { return /^[IVXLCDM]+$/.test(s) && toRoman(fromRoman(s)) === s; }
+  function letterLabel(n, lower) {
+    var idx = (n - 1) % 26, rep = Math.floor((n - 1) / 26) + 1, ch = String.fromCharCode(65 + idx);
+    var s = new Array(rep + 1).join(ch);
+    return lower ? s.toLowerCase() : s;
+  }
+  var LEVEL_NAMES = ['I.', 'A.', '1.', 'a.'];
+  function levelLabel(level, n) {
+    if (level === 0) return toRoman(n) + '.';
+    if (level === 1) return letterLabel(n, false) + '.';
+    if (level === 2) return n + '.';
+    return letterLabel(n, true) + '.';
+  }
+  // rows: [{level, origLabel, text, page}] -> entries with labels
+  function numberRows(rows, renumber) {
+    var c = [0, 0, 0, 0];
+    return rows.map(function (r) {
+      var L = Math.max(0, Math.min(3, r.level | 0));
+      c[L]++; for (var i = L + 1; i < 4; i++) c[i] = 0;
+      return { level: L, label: renumber ? levelLabel(L, c[L]) : (r.origLabel || ''), text: r.text, page: r.page };
+    });
+  }
+  function firstInt(s) { var m = /\d+/.exec(String(s == null ? '' : s)); return m ? parseInt(m[0], 10) : null; }
+
+  /* ---------- text hygiene ---------- */
+  function clean(s) {
+    return String(s == null ? '' : s)
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+      .replace(/ /g, ' ').replace(/‑/g, '-').replace(/\s+/g, ' ').trim();
+  }
+
+  /* ---------- heading detection (works on already-extracted lines) ---------- */
+  // page = {num, H, lines:[{y (from top), x, size, text, items:[{str,x,x2,b,u}]}]}
+  var LABELS = [
+    { re: /^([IVXLCDM]{1,10})[.)]\s*(\S.*)$/, kind: 'roman' },
+    { re: /^([A-Z])[.)]\s*(\S.*)$/, kind: 'upper' },
+    { re: /^(\d{1,3})[.)]\s*(\S.*)$/, kind: 'num' },
+    { re: /^([a-z])[.)]\s*(\S.*)$/, kind: 'lower' }
+  ];
+  var AMBIG = 'IVXLCDM';
+  var STOP = /^(TABLE OF (CONTENTS|AUTHORITIES)|CERTIFICATE OF|APPELLANTS?['’]?S? (OPENING|ANSWERING|REPLY) BRIEF|(OPENING|ANSWERING|REPLY) BRIEF|CAPTION|PAGE\(S\)|PAGES?)/i;
+
+  function styled(it) { return !!(it.b || it.u); }
+
+  function classifyPages(pages, opt) {
+    opt = opt || {};
+    var evidence = 0, cands = [], st = { lastRoman: 0, lastLetter: 0, lastLevel: -1 };
+
+    pages.forEach(function (pg) {
+      var lines = pg.lines.filter(function (l) { return l.y > 54 && l.y < pg.H - 54 && clean(l.text); });
+      // skip pages that are themselves a table of contents / authorities
+      var isTable = lines.some(function (l) { return /^TABLE OF (CONTENTS|AUTHORITIES)\s*$/i.test(clean(l.text)); });
+      if (isTable) return;
+      var i = 0;
+      while (i < lines.length) {
+        var ln = lines[i], txt = clean(ln.text);
+        if (/\.{4,}\s*\d+\s*$/.test(txt)) { i++; continue; }          // existing leader line
+        var hit = matchLabel(txt, st, ln);
+        var unnumbered = false;
+        if (!hit) {
+          unnumbered = isCapsTitle(ln, txt, pg);
+          if (!unnumbered) { i++; continue; }
+          hit = { level: 0, label: '', rest: txt, kind: 'caps' };
+        }
+        // heading text = leading styled run if the line mixes heading + body text
+        var items = ln.items || [];
+        var lineHasStyle = items.some(styled);
+        var text = hit.rest;
+        if (lineHasStyle && items.length > 1) {
+          var acc = '', prevX2 = null, labelLen = hit.label ? hit.label.length : 0;
+          for (var k = 0; k < items.length; k++) {
+            var it = items[k];
+            var sep = (prevX2 != null && it.x - prevX2 > 1.5 && !/\s$/.test(acc)) ? ' ' : '';
+            if (!clean(it.str)) { acc += sep + it.str; prevX2 = it.x2; continue; }
+            if (styled(it) || clean(acc).length < labelLen) { acc += sep + it.str; prevX2 = it.x2; } else break;
+          }
+          var run = acc;
+          var r2 = clean(run);
+          var m2 = hit.kind === 'caps' ? { rest: r2 } : reMatch(r2, hit);
+          if (m2 && m2.rest) text = m2.rest;
+        }
+        var startX = textStart(ln, hit);
+        var styledLine = lineHasStyle;
+        var sizeRef = ln.size || 12;
+        var lastY = ln.y, j = i + 1, n = 1;
+        // wrapped continuation lines
+        var evid = styledLine;
+        while (j < lines.length && n < 6) {
+          var nx = lines[j], nt = clean(nx.text);
+          if (!nt) break;
+          if (/[.!?]$/.test(text) && !evid) break;
+          var gap = nx.y - lastY;
+          var tight = gap > 0 && gap <= sizeRef * 1.45 + 1;
+          var nextIsLabel = !!matchLabel(nt, { lastRoman: 0, lastLetter: 0, lastLevel: -1 }, nx, true);
+          var nStyled = (nx.items || []).length && (nx.items || []).every(function (it) { return styled(it) || !clean(it.str); });
+          var okStyle = evid ? nStyled : (nx.x >= ln.x - 2);
+          if (!tight || nextIsLabel || !okStyle) {
+            // double-spaced wrapped headings: accept if the next line is fully styled & indented like the heading text
+            if (!(evid && nStyled && !nextIsLabel && gap > 0 && gap <= sizeRef * 2.6 && Math.abs(nx.x - startX) < 30 && nx.x > ln.x + 4)) break;
+          }
+          text += ' ' + nt; lastY = nx.y; j++; n++;
+        }
+        if (hit.kind !== 'caps') advance(st, hit);
+        var isBold = items.some(function (it) { return it.b; }), isU = items.some(function (it) { return it.u; });
+        if (isBold || isU) evidence++;
+        cands.push({
+          level: hit.level, origLabel: hit.label, text: clean(text), phys: pg.num, kind: hit.kind,
+          b: isBold, u: isU, y: ln.y
+        });
+        i = j;
+      }
+    });
+
+    var haveStyle = evidence >= 2;
+    cands.forEach(function (c, idx) {
+      var on = true;
+      if (c.kind === 'caps' && (STOP.test(c.text) || (idx === 0 && c.phys === (pages[0] && pages[0].num) && c.y < 200))) on = false;
+      if (haveStyle && !(c.b || c.u)) on = false;   // plain numbered list items / plain caps lines in the body
+      if (!haveStyle && c.text.length > 160 && /[.]$/.test(c.text)) on = false;
+      c.on = on;
+    });
+    return { rows: cands, styledEvidence: haveStyle };
+  }
+
+    function reMatch(txt, hit) {
+    for (var i = 0; i < LABELS.length; i++) { var m = LABELS[i].re.exec(txt); if (m) return { rest: clean(m[2]) }; }
+    return null;
+  }
+  function textStart(ln, hit) {
+    var its = ln.items || [], acc = '';
+    for (var i = 0; i < its.length; i++) {
+      acc += its[i].str;
+      if (hit.label && clean(acc).length >= hit.label.length && its[i + 1]) return its[i + 1].x;
+    }
+    return ln.x + 36;
+  }
+  function isCapsTitle(ln, txt, pg) {
+    if (txt.length < 4 || txt.length > 90) return false;
+    var letters = txt.replace(/[^A-Za-z]/g, '');
+    if (letters.length < 4 || letters !== letters.toUpperCase()) return false;
+    if (/\d{3,}/.test(txt) || /\.{3,}/.test(txt)) return false;
+    var w = pg.W || 612, cx = (ln.x + (ln.x2 || ln.x)) / 2;
+    if (ln.x2 && Math.abs(cx - w / 2) > 40) return false;               // must be centred
+    return true;
+  }
+  // decide which level a leading label means, using running sequence state
+  function matchLabel(txt, st, ln, dry) {
+    for (var i = 0; i < LABELS.length; i++) {
+      var m = LABELS[i].re.exec(txt);
+      if (!m) continue;
+      var tok = m[1], rest = clean(m[2]), kind = LABELS[i].kind;
+      if (!rest) continue;
+      if (kind === 'roman') {
+        if (!validRoman(tok)) { if (tok.length === 1) kind = 'upper'; else continue; }
+        else if (tok.length === 1 && AMBIG.indexOf(tok) >= 0) {
+          var asLetter = st.lastLetter && tok.charCodeAt(0) - 64 === st.lastLetter + 1;
+          var asRoman = fromRoman(tok) === st.lastRoman + 1;
+          kind = (asLetter && !asRoman) || (!asRoman && st.lastLetter) ? 'upper' : 'roman';
+        }
+      }
+      if (kind === 'upper' && !/^[A-Z0-9“"‘'(]/.test(rest)) continue;
+      if (kind === 'roman' && !/^[A-Z0-9“"‘'(]/.test(rest)) continue;
+      if (kind === 'num' && !/^[A-Z“"‘'(]/.test(rest)) continue;
+      if (kind === 'lower' && !/^[A-Z“"‘'(]/.test(rest)) continue;
+      var lvl = kind === 'roman' ? 0 : kind === 'upper' ? 1 : kind === 'num' ? 2 : 3;
+      return { level: lvl, label: tok + '.', rest: rest, kind: kind, val: kind === 'roman' ? fromRoman(tok) : kind === 'upper' ? tok.charCodeAt(0) - 64 : 0 };
+    }
+    return null;
+  }
+  function advance(st, hit) {
+    if (hit.kind === 'roman') { st.lastRoman = hit.val; st.lastLetter = 0; }
+    else if (hit.kind === 'upper') st.lastLetter = hit.val;
+    st.lastLevel = hit.level;
+  }
+
+  // bookmarks -> rows.  items: [{title, level, page}]
+  function rowsFromBookmarks(items) {
+    return items.map(function (b) {
+      var t = clean(b.title), label = '';
+      var m = null;
+      for (var i = 0; i < LABELS.length; i++) { m = LABELS[i].re.exec(t); if (m && (LABELS[i].kind !== 'roman' || validRoman(m[1]))) { label = m[1] + '.'; t = clean(m[2]); break; } m = null; }
+      return { level: Math.min(3, b.level), origLabel: label, text: t, phys: b.page, kind: 'bookmark', on: true };
+    });
+  }
+
+  /* ---------- page layout (shared by preview + PDF) ---------- */
+  // m = {w(str,bold)->points}; y values are baselines measured from the TOP of the page
+  function layoutToc(entries, m, o) {
+    o = o || {};
+    var LH = 13.8, ML = 72, MR = 540, TOP = 72, BOT = 720, TAB = 36, ASC = 10.7;
+    var pages = [], page, y;
+    var maxPw = 0;
+    entries.forEach(function (e) { if (e.page !== '' && e.page != null) maxPw = Math.max(maxPw, m.w(String(e.page), false)); });
+    var R = MR - Math.max(54, maxPw + 14);
+    function newPage(first) {
+      page = { ops: [], links: [] }; pages.push(page); y = TOP;
+      if (first) {
+        var tw = m.w('TABLE OF CONTENTS', true);
+        put('TABLE OF CONTENTS', (612 - tw) / 2, y + ASC, true, true);
+        y += LH * 2;
+      }
+      if (first || o.repeatHeader !== false) {
+        var pw = m.w('PAGE(S)', true);
+        put('PAGE(S)', MR - pw, y + ASC, true, true);
+        y += LH * 2;
+      }
+    }
+    function put(str, x, base, bold, ul) {
+      page.ops.push({ t: 'text', s: str, x: x, y: base, b: !!bold });
+      if (ul) page.ops.push({ t: 'ul', x1: x, x2: x + m.w(str, !!bold), y: base + 1.7 });
+    }
+    newPage(true);
+    entries.forEach(function (e) {
+      var bold = e.level === 0, labelX = ML + TAB * e.level, label = e.label || '';
+      var lw = label ? m.w(label, bold) : 0;
+      var textX = label ? labelX + TAB * Math.max(1, Math.ceil((lw + 3) / TAB)) : labelX;
+      var words = String(e.text).split(' '), lines = [], cur = '';
+      words.forEach(function (w) {
+        var t = cur ? cur + ' ' + w : w;
+        if (cur && textX + m.w(t, bold) > R) { lines.push(cur); cur = w; } else cur = t;
+      });
+      lines.push(cur);
+      var height = lines.length * LH;
+      if (y + height > BOT + 0.01 && y > TOP + LH * 4) newPage(false);
+      lines.forEach(function (ln, i) {
+        var base = y + i * LH + ASC;
+        if (i === 0 && label) put(label, labelX, base, bold, false);
+        put(ln, textX, base, bold, false);
+        if (i === lines.length - 1 && e.page !== '' && e.page != null) {
+          var ps = String(e.page), pw = m.w(ps, false), px = MR - pw;
+          var endX = textX + m.w(ln, bold), dw = m.w('.', false);
+          var avail = px - 5 - (endX + 5), cnt = Math.floor(avail / dw);
+          if (cnt >= 2) put(new Array(cnt + 1).join('.'), px - 5 - cnt * dw, base, false, false);
+          put(ps, px, base, false, false);
+          page.links.push({ x1: px, x2: MR, top: base - 9.5, bottom: base + 2.5, page: ps });
+        }
+      });
+      y += height + LH;
+    });
+    if (o.footer) pages.forEach(function (pg, i) {
+      page = pg; var s = toRoman(i + 1).toLowerCase(), w = m.w(s, false);
+      put(s, (612 - w) / 2, 792 - 40 + ASC * 0, false, false);
+    });
+    return pages;
+  }
+
+  /* ---------- .docx writer (no dependencies) ---------- */
+  var enc = new TextEncoder();
+  var CRC = (function () { var t = new Uint32Array(256); for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(b) { var c = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function zipStore(files) {
+    var parts = [], central = [], off = 0;
+    files.forEach(function (f) {
+      var name = enc.encode(f.name), data = typeof f.data === 'string' ? enc.encode(f.data) : f.data, crc = crc32(data);
+      var h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint16(10, 0, true); h.setUint16(12, 0x21, true); h.setUint32(14, crc, true);
+      h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+      parts.push(new Uint8Array(h.buffer), name, data);
+      var c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+      c.setUint16(10, 0, true); c.setUint16(12, 0, true); c.setUint16(14, 0x21, true); c.setUint32(16, crc, true);
+      c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true);
+      c.setUint32(42, off, true);
+      central.push(new Uint8Array(c.buffer), name);
+      off += 30 + name.length + data.length;
+    });
+    var csize = 0; central.forEach(function (p) { csize += p.length; });
+    var e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+    e.setUint32(12, csize, true); e.setUint32(16, off, true);
+    var all = parts.concat(central, [new Uint8Array(e.buffer)]), total = 0;
+    all.forEach(function (p) { total += p.length; });
+    var out = new Uint8Array(total), pos = 0;
+    all.forEach(function (p) { out.set(p, pos); pos += p.length; });
+    return out;
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  function tocBlock(entries, o) {
+    o = o || {};
+    var rels = [], rid = 10;
+    function run(t, rp) { return '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>' + (rp || '') + '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>' + '<w:t xml:space="preserve">' + esc(t) + '</w:t></w:r>'; }
+    var TAB = '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/></w:rPr><w:tab/></w:r>';
+    var body = '';
+    body += '<w:p><w:pPr><w:spacing w:before="0" w:after="240" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr>' + run('TABLE OF CONTENTS', '<w:b/><w:bCs/><w:u w:val="single"/>') + '</w:p>';
+    body += '<w:p><w:pPr><w:spacing w:before="0" w:after="240" w:line="240" w:lineRule="auto"/><w:jc w:val="right"/></w:pPr>' + run('PAGE(S)', '<w:b/><w:bCs/><w:u w:val="single"/>') + '</w:p>';
+    entries.forEach(function (e) {
+      var left = 720 * (e.level + 1), hang = 720;
+      var b = e.level === 0 ? '<w:b/><w:bCs/>' : '';
+      var p = '<w:p><w:pPr><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9360"/></w:tabs><w:spacing w:before="0" w:after="240" w:line="240" w:lineRule="auto"/>' +
+        '<w:ind w:left="' + left + '" w:right="1080" w:hanging="' + hang + '"/></w:pPr>';
+      if (e.label) p += run(e.label, b) + TAB; else p = p.replace('w:hanging="720"', 'w:hanging="0"').replace('w:left="' + left + '"', 'w:left="' + (left - 720) + '"');
+      p += run(e.text, b);
+      if (e.page !== '' && e.page != null) {
+        p += TAB;
+        var pn = firstInt(e.page);
+        if (o.internalLinks && e.anchor && pn) {
+          p += '<w:hyperlink w:anchor="' + esc(e.anchor) + '" w:history="1">' + run(String(e.page)) + '</w:hyperlink>';
+        } else if (o.linkFile && pn) {
+          var id = 'rId' + (rid++);
+          rels.push('<Relationship Id="' + id + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="' + esc(o.linkFile + '#page=' + (pn + (o.pdfOffset || 0))) + '" TargetMode="External"/>');
+          p += '<w:hyperlink r:id="' + id + '" w:history="1">' + run(String(e.page)) + '</w:hyperlink>';
+        } else p += run(String(e.page));
+      }
+      body += p + '</w:p>';
+    });
+    return { xml: body, rels: rels };
+  }
+
+  function buildDocx(entries, o) {
+    o = o || {};
+    var W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+    var tb = tocBlock(entries, o), body = tb.xml, rels = tb.rels;
+    if (!entries.length) body += '<w:p/>';
+    var sect = '<w:sectPr>' + (o.footer ? '<w:footerReference w:type="default" r:id="rId3"/>' : '') +
+      '<w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>' +
+      (o.footer ? '<w:pgNumType w:fmt="lowerRoman" w:start="1"/>' : '') + '</w:sectPr>';
+    var doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ' + W + '><w:body>' + body + sect + '</w:body></w:document>';
+    var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ' + W + '><w:docDefaults><w:rPrDefault><w:rPr>' +
+      '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault>' +
+      '<w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+      '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>';
+    var settings = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings ' + W + '><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>';
+    var footer = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr ' + W + '><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:fldSimple w:instr=" PAGE "><w:r><w:t>i</w:t></w:r></w:fldSimple></w:p></w:ftr>';
+    var ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+      '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>' +
+      (o.footer ? '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>' : '') + '</Types>';
+    var root = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+    var drels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>' +
+      (o.footer ? '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>' : '') + rels.join('') + '</Relationships>';
+    var files = [
+      { name: '[Content_Types].xml', data: ct }, { name: '_rels/.rels', data: root },
+      { name: 'word/document.xml', data: doc }, { name: 'word/styles.xml', data: styles }, { name: 'word/settings.xml', data: settings }, { name: 'word/_rels/document.xml.rels', data: drels }
+    ];
+    if (o.footer) files.push({ name: 'word/footer1.xml', data: footer });
+    return zipStore(files);
+  }
+
+  return { toRoman: toRoman, fromRoman: fromRoman, letterLabel: letterLabel, levelLabel: levelLabel, numberRows: numberRows, firstInt: firstInt,
+    clean: clean, classifyPages: classifyPages, rowsFromBookmarks: rowsFromBookmarks, layoutToc: layoutToc, buildDocx: buildDocx, tocBlock: tocBlock, zipStore: zipStore, LEVEL_NAMES: LEVEL_NAMES };
+})();
+if (typeof module !== 'undefined') module.exports = TOC;
+
+</script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var S = { docx: null, rows: [], example: true, bytes: null, pdf: null, name: '', numPages: 0, cache: null, outline: null, uid: 1, styled: false };
+  var EXAMPLE = [
+    [0, 'CONCISE STATEMENT OF THE CASE', 1], [1, 'Nature of the Case', 1], [1, 'The Course and Disposition of Proceedings', 2],
+    [0, 'STATEMENT OF THE POINTS OF ERROR', 4],
+    [1, 'The Circuit Court Erred in Denying Appellants’ Motion to Dismiss Where There Was No Jurisdiction over the Claims Made by Appellee', 4],
+    [1, 'The Circuit Court Erred in Granting Summary Judgment as to Count 2, Thereby Improperly Limiting the Auditor’s Power of Examination and Inspection', 5],
+    [0, 'CONCISE STATEMENT OF MATERIAL FACTS', 6],
+    [1, 'The Auditor’s Duties, Powers and Standards', 6],
+    [1, 'The 2020–2021 Budget Appropriation - Act 37 Conditioned Release of Some OHA Funds on Issuance of Audit Report', 8],
+    [1, 'The Audit, OHA’s Intentional Refusal to Produce Information, and the Suspension of the Audit', 9],
+    [0, 'STANDARD OF REVIEW', 11],
+    [1, 'Summary Judgment', 11], [1, 'Motion to Dismiss', 12], [1, 'Judgment on the Pleadings', 12], [1, 'Existence of Jurisdiction', 12],
+    [0, 'ARGUMENT', 13],
+    [1, 'The Circuit Court Erred in Denying Appellants’ Motion to Dismiss Where There Was No Jurisdiction Over the Claims Made by Appellee', 13],
+    [1, 'The Circuit Court Lacked Jurisdiction Over This Case Pursuant to the Doctrine of Sovereign Immunity', 17],
+    [1, 'The Circuit Court Erred in Exercising Jurisdiction Because the Case Should Have Been Barred Under the Political Question Doctrine', 20],
+    [1, 'The Circuit Court Erred in Granting OHA Summary Judgment, Thereby Improperly Limiting the Auditor’s Power to Examine and Inspect State Records', 22],
+    [2, 'The Circuit Court Erred in Failing to Consider that Any Privilege Claimed Must Be Strictly Interpreted and Reviewed Under the Narrow Exception Set Forth in the Sunshine Law', 23],
+    [2, 'Disclosure of Privileged Documents to the Auditor Is Not Voluntary Does Not Result in Waiver of the Privilege', 26],
+    [2, 'There Is No Conflict Between HRS § 23‑5 and HRE 503', 28],
+    [0, 'CONCLUSION', 29]
+  ];
+
+  function mk(o) { return Object.assign({ id: S.uid++, on: true, level: 0, origLabel: '', text: '', page: '', phys: null, edited: false, kind: 'manual', note: '', key: '' }, o); }
+  function loadExample() {
+    S.example = true; S.styled = false;
+    S.rows = EXAMPLE.map(function (e) { return mk({ level: e[0], text: e[1], page: String(e[2]), kind: 'example' }); });
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function startPage() { var v = parseInt($('#start').value, 10); return v >= 1 ? v : 1; }
+  function toast(msg) { var t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 4200); }
+  function status(msg, err) { var s = $('#status'); s.textContent = msg || ''; s.className = 'status' + (err ? ' err' : ''); }
+
+  /* ---------- rows UI ---------- */
+  var LVL = ['1 (I.)', '2 (A.)', '3 (1.)', '4 (a.)'];
+  function rowHTML(r) {
+    var opts = LVL.map(function (n, i) { return '<option value="' + i + '"' + (i === r.level ? ' selected' : '') + '>Level ' + n + '</option>'; }).join('');
+    return '<div class="row' + (r.on ? '' : ' off') + '" data-id="' + r.id + '" style="padding-left:' + (6 + r.level * 8) + 'px">' +
+      '<input class="on" type="checkbox" aria-label="Include this heading"' + (r.on ? ' checked' : '') + '>' +
+      '<span class="lab"></span>' +
+      '<div class="rowtext"><textarea class="txt" rows="1" aria-label="Heading text">' + esc(r.text) + '</textarea>' + (r.note ? '<span class="tag">' + esc(r.note) + '</span>' : '') + '</div>' +
+      '<input class="pg" type="text" inputmode="numeric" aria-label="Page or pages" value="' + esc(r.page) + '">' +
+      '<select class="lvl" aria-label="Heading level">' + opts + '</select>' +
+      '<div class="acts"><button class="icon" data-act="up" title="Move up" aria-label="Move up">↑</button><button class="icon" data-act="down" title="Move down" aria-label="Move down">↓</button><button class="icon" data-act="add" title="Add a heading below" aria-label="Add a heading below">+</button><button class="icon" data-act="del" title="Remove" aria-label="Remove heading">✕</button></div>' +
+      '</div>';
+  }
+  function renderRows() {
+    var box = $('#rows');
+    if (!S.rows.length) { box.innerHTML = '<div class="empty">No headings yet. Drop a PDF above, or use “+ Add heading”.</div>'; refresh(); return; }
+    box.innerHTML = S.rows.map(rowHTML).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('textarea'), grow);
+    refresh();
+  }
+  function grow(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; }
+  function findRow(el) { var d = el.closest('.row'); if (!d) return null; var id = +d.dataset.id; for (var i = 0; i < S.rows.length; i++) if (S.rows[i].id === id) return i; return -1; }
+
+  function entries() {
+    var on = S.rows.filter(function (r) { return r.on && (r.text || '').trim(); });
+    return TOC.numberRows(on, $('#renumber').checked).map(function (e, i) { e.page = String(on[i].page || '').trim(); e.anchor = 'TOCH_' + (i + 1); e.key = on[i].key || on[i].text; return e; });
+  }
+  function refreshLabels() {
+    var c = [0, 0, 0, 0], ren = $('#renumber').checked;
+    S.rows.forEach(function (r) {
+      var el = document.querySelector('.row[data-id="' + r.id + '"] .lab'); if (!el) return;
+      if (!r.on || !String(r.text).trim()) { el.textContent = ''; return; }
+      var L = r.level; c[L]++; for (var i = L + 1; i < 4; i++) c[i] = 0;
+      el.textContent = ren ? TOC.levelLabel(L, c[L]) : (r.origLabel || '');
+    });
+  }
+  var pvTimer;
+  function refresh() { refreshLabels(); clearTimeout(pvTimer); pvTimer = setTimeout(renderPreview, 100); notes(); }
+  function notes() {
+    var n = $('#notes'), h = '';
+    if (S.example) h = '<p class="note ex">Example outline from your sample. Choose your PDF above to replace it. Page numbers here are made up.</p>';
+    else if (S.msg) h = '<p class="note">' + esc(S.msg) + '</p>';
+    n.innerHTML = h;
+    var any = S.rows.some(function (r) { return r.on; });
+    $('#dl').disabled = $('#dlTop').disabled = !any; syncLinkBtn();
+  }
+
+  /* ---------- preview (SVG, same layout numbers as the Word file) ---------- */
+  var ctx = document.createElement('canvas').getContext('2d');
+  var FAM = '"Times New Roman","Liberation Serif",Times,serif';
+  var mcache = {};
+  function measure(s, bold) {
+    var k = (bold ? 'b' : 'r') + s; if (mcache[k] != null) return mcache[k];
+    ctx.font = (bold ? 'bold ' : '') + '12px ' + FAM;
+    return (mcache[k] = ctx.measureText(s).width);
+  }
+  function renderPreview() {
+    var list = entries(), sheets = $('#sheets');
+    if (!list.length) { sheets.innerHTML = '<div class="empty">Nothing ticked yet.</div>'; $('#pvsub').textContent = 'Letter size, 1″ margins, Times New Roman 12 pt.'; return; }
+    var pages = TOC.layoutToc(list, { w: measure }, { footer: $('#footer').checked });
+    sheets.innerHTML = pages.map(function (pg, i) {
+      var g = pg.ops.map(function (o) {
+        if (o.t === 'ul') return '<line x1="' + o.x1.toFixed(1) + '" x2="' + o.x2.toFixed(1) + '" y1="' + o.y.toFixed(1) + '" y2="' + o.y.toFixed(1) + '" stroke-width=".6"/>';
+        return '<text x="' + o.x.toFixed(1) + '" y="' + o.y.toFixed(1) + '"' + (o.b ? ' font-weight="bold"' : '') + ' xml:space="preserve">' + esc(o.s) + '</text>';
+      }).join('');
+      return '<svg class="sheet" viewBox="0 0 612 792" role="img" aria-label="Table of Contents page ' + (i + 1) + '" font-family=\'' + FAM.replace(/"/g, '&quot;') + '\' font-size="12">' + g + '</svg><div class="cap">Page ' + (i + 1) + ' of ' + pages.length + '</div>';
+    }).join('');
+    $('#pvsub').textContent = list.length + ' heading' + (list.length === 1 ? '' : 's') + ' · ' + pages.length + ' page' + (pages.length === 1 ? '' : 's') + ' · Letter, 1″ margins, Times New Roman 12 pt';
+  }
+
+  /* ---------- reading the PDF ---------- */
+  function mult(a, b) { return [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3], a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3], a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5]]; }
+  function pt(m, x, y) { return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]]; }
+
+  function underlineSegments(ops, vp) {
+    var OPS = pdfjsLib.OPS, out = [], ctm = [1, 0, 0, 1, 0, 0], stack = [];
+    var full = function (m) { return mult(m, vp.transform); };
+    for (var i = 0; i < ops.fnArray.length; i++) {
+      var fn = ops.fnArray[i], a = ops.argsArray[i];
+      if (fn === OPS.save) stack.push(ctm.slice());
+      else if (fn === OPS.restore) { if (stack.length) ctm = stack.pop(); }
+      else if (fn === OPS.transform) ctm = mult(a, ctm);
+      else if (fn === OPS.constructPath) {
+        var po = a[0], co = a[1], ci = 0, cur = null, m = full(ctm);
+        for (var k = 0; k < po.length; k++) {
+          var o = po[k];
+          if (o === OPS.rectangle) {
+            var x = co[ci++], y = co[ci++], w = co[ci++], h = co[ci++];
+            var p1 = pt(m, x, y), p2 = pt(m, x + w, y + h);
+            var wd = Math.abs(p2[0] - p1[0]), ht = Math.abs(p2[1] - p1[1]);
+            if (ht < 2.6 && wd > 5) out.push({ x1: Math.min(p1[0], p2[0]), x2: Math.max(p1[0], p2[0]), y: Math.max(p1[1], p2[1]) });
+          } else if (o === OPS.moveTo) { cur = pt(m, co[ci++], co[ci++]); }
+          else if (o === OPS.lineTo) {
+            var q = pt(m, co[ci++], co[ci++]);
+            if (cur && Math.abs(q[1] - cur[1]) < 1 && Math.abs(q[0] - cur[0]) > 5) out.push({ x1: Math.min(q[0], cur[0]), x2: Math.max(q[0], cur[0]), y: q[1] });
+            cur = q;
+          } else if (o === OPS.curveTo) { ci += 6; } else if (o === OPS.curveTo2 || o === OPS.curveTo3) { ci += 4; }
+        }
+      }
+    }
+    return out;
+  }
+  var boldCache = {};
+  function isBoldFont(page, fontName) {
+    if (fontName in boldCache) return boldCache[fontName];
+    var v = false;
+    try {
+      var f = page.commonObjs.get(fontName);
+      var nm = String((f && (f.name || f.fallbackName)) || '');
+      v = !!(f && f.bold) || /bold|black|heavy|semibold|demi/i.test(nm);
+    } catch (e) { v = false; }
+    return (boldCache[fontName] = v);
+  }
+  async function pageLines(page, num) {
+    var vp = page.getViewport({ scale: 1 }), H = vp.height, W = vp.width, segs = [];
+    var tc = await page.getTextContent();
+    try { var ops = await page.getOperatorList(); segs = underlineSegments(ops, vp); } catch (e) { segs = []; }
+    var items = [];
+    tc.items.forEach(function (it) {
+      if (!it.str || !it.str.trim()) return;
+      var tr = it.transform, size = Math.hypot(tr[0], tr[1]) || it.height || 12, y = H - tr[5], x = tr[4], x2 = x + (it.width || 0), cx = (x + x2) / 2;
+      var u = segs.some(function (s) { return cx >= s.x1 - 2 && cx <= s.x2 + 2 && s.y - y > -1.5 && s.y - y < 4.5; });
+      items.push({ str: it.str, x: x, x2: x2, y: y, size: size, b: isBoldFont(page, it.fontName), u: u });
+    });
+    items.sort(function (a, b) { return a.y - b.y || a.x - b.x; });
+    var lines = [];
+    items.forEach(function (it) {
+      var L = lines[lines.length - 1];
+      if (L && Math.abs(L.y - it.y) < 2.6) L.items.push(it); else lines.push({ y: it.y, size: it.size, items: [it] });
+    });
+    lines.forEach(function (L) {
+      L.items.sort(function (a, b) { return a.x - b.x; });
+      var t = '', prev = null;
+      L.items.forEach(function (it) {
+        if (prev && it.x - prev.x2 > 0.12 * it.size && !/\s$/.test(t) && !/^\s/.test(it.str)) t += ' ';
+        t += it.str; prev = it;
+      });
+      L.text = t; L.x = L.items[0].x; L.x2 = L.items[L.items.length - 1].x2;
+      L.size = Math.max.apply(null, L.items.map(function (i) { return i.size; }));
+    });
+    return { num: num, H: H, W: W, lines: lines };
+  }
+  async function readOutline(pdf) {
+    var out = [];
+    try {
+      var tree = await pdf.getOutline();
+      async function walk(nodes, depth) {
+        for (var i = 0; i < nodes.length; i++) {
+          var n = nodes[i], page = null;
+          try {
+            var d = n.dest; if (typeof d === 'string') d = await pdf.getDestination(d);
+            if (Array.isArray(d)) page = (d[0] && typeof d[0] === 'object') ? (await pdf.getPageIndex(d[0])) + 1 : (typeof d[0] === 'number' ? d[0] + 1 : null);
+          } catch (e) { page = null; }
+          if (page) out.push({ title: n.title, level: depth, page: page });
+          if (n.items && n.items.length) await walk(n.items, depth + 1);
+        }
+      }
+      if (tree) await walk(tree, 0);
+    } catch (e) { out = []; }
+    return out;
+  }
+
+  function applyDetection() {
+    if (!S.pdf) return;
+    var start = startPage(), src = $('#source').value, rows = [], used = '';
+    var bm = (S.outline || []).filter(function (b) { return b.page >= start; });
+    if ((src === 'bookmarks' || (src === 'auto' && bm.length >= 2))) {
+      rows = TOC.rowsFromBookmarks(bm); used = 'bookmarks';
+    }
+    if (!rows.length && src !== 'bookmarks') {
+      var pages = (S.cache || []).filter(function (p) { return p.num >= start; });
+      var res = TOC.classifyPages(pages); rows = res.rows; used = 'text'; S.styled = res.styledEvidence;
+    }
+    S.example = false;
+    S.rows = rows.map(function (r) {
+      var note = '';
+      if (used === 'text' && !r.on) note = r.kind === 'caps' ? 'centred title, check' : 'not bold/underlined';
+      return mk({ on: r.on, level: r.level, origLabel: r.origLabel, text: r.text, phys: r.phys, page: String(r.phys - start + 1), kind: r.kind, note: note, key: r.text });
+    });
+    var off = S.rows.filter(function (r) { return !r.on; }).length;
+    if (!S.rows.length) S.msg = used === 'bookmarks' && src === 'bookmarks' ? 'This PDF has no bookmarks. Switch “Find headings from” to page text.' : 'No headings found. Add them with “+ Add heading”, or check that your headings start with I., A., 1. or a.';
+    else S.msg = 'Found ' + S.rows.length + ' headings from ' + (used === 'bookmarks' ? 'the PDF bookmarks' : 'the page text') + '.' + (off ? ' ' + off + ' possible ' + (off === 1 ? 'heading is' : 'headings are') + ' unticked' + (used === 'text' ? ' because ' + (off === 1 ? 'it isn’t' : 'they aren’t') + ' bold or underlined like your other headings' : '') + '. Tick any that belong.' : '');
+    renderRows();
+  }
+
+  async function openPdf(file) {
+    if (!file) return;
+    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') { status('That is not a PDF. Save your Word brief as a PDF first (File > Save As > PDF).', true); return; }
+    if (!window.pdfjsLib) { status('The PDF reader did not load. Check your connection and reload this page.', true); return; }
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = './vendor/pdf.worker.min.js';
+      status('Reading ' + file.name + ' …'); $('#barWrap').hidden = false; $('#bar').style.width = '2%';
+      var bytes = new Uint8Array(await file.arrayBuffer());
+      S.bytes = bytes; S.name = file.name; boldCache = {};
+      var pdf = await pdfjsLib.getDocument({ data: bytes.slice(), fontExtraProperties: true }).promise;
+      S.pdf = pdf; S.numPages = pdf.numPages; S.cache = []; S.outline = await readOutline(pdf);
+      $('#dropTitle').textContent = file.name; $('#dropSub').textContent = pdf.numPages + ' pages · click to choose a different PDF';
+            for (var i = 1; i <= pdf.numPages; i++) {
+        status('Scanning page ' + i + ' of ' + pdf.numPages + ' …');
+        $('#bar').style.width = Math.round(i / pdf.numPages * 100) + '%';
+        S.cache.push(await pageLines(await pdf.getPage(i), i));
+      }
+      $('#barWrap').hidden = true; status('');
+      applyDetection();
+    } catch (e) {
+      $('#barWrap').hidden = true;
+      var m = String(e && e.message || e);
+      status(/password/i.test(m) ? 'This PDF is password protected. Save an unprotected copy and try again.' : 'Could not read that PDF (' + m + ').', true);
+    }
+  }
+
+  /* ---------- download ---------- */
+  function baseName() { var n = (S.name || 'Brief').replace(/\.pdf$/i, ''); return n + ' - Table of Contents.docx'; }
+  async function download() {
+    var list = entries();
+    if (!list.length) { toast('Tick at least one heading first.'); return; }
+    var data = TOC.buildDocx(list, { footer: $('#footer').checked, internalLinks: false });
+    var name = baseName();
+    try {
+      var dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+      if (dl) { await dl.save({ filename: name, data: data }); toast('Saved ' + name); return; }
+    } catch (e) {
+      if (e && e.code === 'declined') { toast('Download cancelled.'); return; }
+    }
+    var blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500); toast('Downloading ' + name);
+  }
+
+  /* ---------- put the table into a copy of the Word brief, with real links ---------- */
+  var WNS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  function normT(s) { return String(s).replace(/[ʻ‘’ʼ`´]/g, "'").replace(/[“”]/g, '"').replace(/[‐-―−]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase(); }
+  function paraText(p) {
+    var out = '';
+    (function walk(n) {
+      for (var c = n.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType !== 1) continue;
+        var ln = c.localName;
+        if (ln === 't') out += c.textContent;
+        else if (ln === 'tab') out += '\t';
+        else if (ln === 'br' || ln === 'cr') out += ' ';
+        else if (ln === 'noBreakHyphen') out += '-';
+        else if (ln === 'instrText' || ln === 'delText' || ln === 'pPr') continue;
+        else walk(c);
+      }
+    })(p);
+    return out;
+  }
+  function wattr(el, name) { return el.getAttributeNS(WNS, name); }
+  async function linkDocx(data, entries) {
+    if (!window.JSZip) throw new Error('The Word file reader did not load. Check your connection and reload.');
+    var zip;
+    try { zip = await JSZip.loadAsync(data); } catch (e) { throw new Error('That is not a Word .docx file.'); }
+    var f = zip.file('word/document.xml');
+    if (!f) throw new Error('That is not a Word .docx file.');
+    var xml = await f.async('string');
+    var doc = new DOMParser().parseFromString(xml, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) throw new Error('Could not read that Word file.');
+    var body = doc.getElementsByTagNameNS(WNS, 'body')[0];
+    if (!body) throw new Error('Could not read that Word file.');
+    function make(name, attrs) { var e = doc.createElementNS(WNS, 'w:' + name); Object.keys(attrs || {}).forEach(function (k) { e.setAttributeNS(WNS, 'w:' + k, attrs[k]); }); return e; }
+    function topParas() { return Array.prototype.filter.call(body.childNodes, function (n) { return n.nodeType === 1 && n.localName === 'p'; }); }
+    function all(name) { return Array.prototype.slice.call(doc.getElementsByTagNameNS(WNS, name)); }
+    function paraOf(n) { while (n && n.parentNode !== body) n = n.parentNode; return n; }
+    function fragment(inner) {
+      var d = new DOMParser().parseFromString('<w:root xmlns:w="' + WNS + '">' + inner + '</w:root>', 'application/xml');
+      return Array.prototype.map.call(d.documentElement.childNodes, function (n) { return doc.importNode(n, true); });
+    }
+    function afterPPr(p) { var pp = null; for (var c = p.firstChild; c; c = c.nextSibling) if (c.nodeType === 1 && c.localName === 'pPr') { pp = c; break; } return pp ? pp.nextSibling : p.firstChild; }
+
+    // a previous run of this tool: take the old table out (leave a [[TOC]] marker) and old bookmarks
+    all('bookmarkStart').filter(function (b) { return wattr(b, 'name') === '_toc_block'; }).forEach(function (bs) {
+      var id = wattr(bs, 'id'), p0 = paraOf(bs), pe = null;
+      all('bookmarkEnd').forEach(function (be) { if (wattr(be, 'id') === id) pe = paraOf(be); });
+      if (!p0 || !pe) return;
+      var marker = fragment('<w:p><w:r><w:t>[[TOC]]</w:t></w:r></w:p>')[0];
+      body.insertBefore(marker, p0);
+      var n = p0, stop = pe.nextSibling;
+      while (n && n !== stop) { var nx = n.nextSibling; body.removeChild(n); n = nx; }
+    });
+    var oldIds = {};
+    all('bookmarkStart').forEach(function (b) { if (/^(TOCH_|_toc_)/.test(wattr(b, 'name'))) { oldIds[wattr(b, 'id')] = 1; b.parentNode.removeChild(b); } });
+    all('bookmarkEnd').forEach(function (b) { if (oldIds[wattr(b, 'id')]) b.parentNode.removeChild(b); });
+
+    var nextId = 1;
+    Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (el) { var v = parseInt(el.getAttributeNS(WNS, 'id'), 10); if (v >= nextId) nextId = v + 1; });
+
+    // where does the table go?
+    var paras = topParas(), markerIdx = -1;
+    for (var i = 0; i < paras.length; i++) if (/^\[\[toc\]\]$/i.test(paraText(paras[i]).trim())) { markerIdx = i; break; }
+    var scope = markerIdx >= 0 ? paras.slice(markerIdx + 1) : paras;
+    var texts = scope.map(function (p) { var t = normT(paraText(p)); return { a: t, b: t.replace(/^(?:[ivxlcdm]{1,10}|[a-z]|\d{1,3})[.)]\s*/, '') }; });
+
+    // find each heading, in order, and put a bookmark at the start of its paragraph
+    var cursor = 0, ok = 0, missing = [];
+    entries.forEach(function (e) {
+      e.anchor = null;
+      if (e.page === '') return;
+      var k = normT(e.key || e.text).slice(0, 60).trim(), found = -1;
+      if (!k) return;
+      for (var pass = 0; pass < 2 && found < 0; pass++) {
+        for (var j = pass ? 0 : cursor; j < scope.length; j++) { if (texts[j].b.indexOf(k) === 0 || texts[j].a.indexOf(k) === 0) { found = j; break; } }
+      }
+      if (found < 0) { missing.push(e.text); return; }
+      var name = 'TOCH_' + (ok + 1), id = String(nextId++), p = scope[found], ref = afterPPr(p);
+      p.insertBefore(make('bookmarkStart', { id: id, name: name }), ref);
+      p.insertBefore(make('bookmarkEnd', { id: id }), ref);
+      e.anchor = name; ok++; cursor = found + 1;
+    });
+
+    // the table itself
+    var blk = TOC.tocBlock(entries, { internalLinks: true });
+    var nodes = fragment(blk.xml), bid = String(nextId++);
+    nodes[0].insertBefore(make('bookmarkStart', { id: bid, name: '_toc_block' }), afterPPr(nodes[0]));
+    nodes[nodes.length - 1].appendChild(make('bookmarkEnd', { id: bid }));
+    var refNode;
+    if (markerIdx >= 0) { refNode = paras[markerIdx]; nodes.forEach(function (n) { body.insertBefore(n, refNode); }); body.removeChild(refNode); }
+    else {
+      refNode = body.firstChild; nodes.forEach(function (n) { body.insertBefore(n, refNode); });
+      body.insertBefore(fragment('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')[0], refNode);
+    }
+    var out = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + new XMLSerializer().serializeToString(doc).replace(/^<\?xml[^>]*\?>\s*/, '');
+    zip.file('word/document.xml', out);
+    var bytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+    return { bytes: bytes, ok: ok, total: entries.filter(function (e) { return e.page !== ''; }).length, missing: missing, marker: markerIdx >= 0 };
+  }
+  async function saveBytes(name, data) {
+    var dl = null;
+    try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { dl = null; }
+    if (dl) { await dl.save({ filename: name, data: data }); return; }
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+  async function makeLinked() {
+    var msg = $('#linkMsg'); msg.className = ''; msg.textContent = 'Working …';
+    try {
+      var list = entries();
+      if (!list.length) { msg.textContent = 'Tick at least one heading first.'; return; }
+      var res = await linkDocx(S.docx.data, list);
+      var name = S.docx.name.replace(/\.docx$/i, '') + ' - with Table of Contents.docx';
+      await saveBytes(name, res.bytes);
+      var h = 'Saved. Linked ' + res.ok + ' of ' + res.total + ' page numbers.' + (res.marker ? '' : ' The table is at the very top of the file, followed by a page break.');
+      h += ' Open it in Word, Ctrl + click a page number to try one, then save as PDF.';
+      msg.className = res.ok === res.total ? 'ok' : '';
+      msg.textContent = h;
+      if (res.missing.length) {
+        var ul = document.createElement('ul');
+        res.missing.slice(0, 12).forEach(function (m) { var li = document.createElement('li'); li.textContent = m + ' (not found in the Word file, left as a plain number)'; ul.appendChild(li); });
+        msg.appendChild(ul);
+      }
+    } catch (e) {
+      msg.className = 'err';
+      msg.textContent = e && e.code === 'declined' ? 'Save cancelled.' : 'Could not build the file' + (e && e.message ? ': ' + e.message : '.');
+    }
+  }
+  function syncLinkBtn() { $('#dlLinked').disabled = S.example || !S.docx || !S.rows.some(function (r) { return r.on; }); }
+
+  /* ---------- wiring ---------- */
+  var list = $('#rows');
+  list.addEventListener('input', function (e) {
+    var i = findRow(e.target); if (i == null || i < 0) return; var r = S.rows[i];
+    if (e.target.classList.contains('txt')) { r.text = e.target.value.replace(/\s*\n\s*/g, ' '); grow(e.target); }
+    else if (e.target.classList.contains('pg')) { r.page = e.target.value; r.edited = true; }
+    refresh();
+  });
+  list.addEventListener('change', function (e) {
+    var i = findRow(e.target); if (i == null || i < 0) return; var r = S.rows[i];
+    if (e.target.classList.contains('on')) { r.on = e.target.checked; e.target.closest('.row').classList.toggle('off', !r.on); }
+    else if (e.target.classList.contains('lvl')) { r.level = +e.target.value; e.target.closest('.row').style.paddingLeft = 6 + r.level * 8 + 'px'; }
+    refresh();
+  });
+  list.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b) return;
+    var i = findRow(b), a = b.dataset.act; if (i < 0) return;
+    if (a === 'up' && i > 0) { var t = S.rows[i]; S.rows[i] = S.rows[i - 1]; S.rows[i - 1] = t; }
+    else if (a === 'down' && i < S.rows.length - 1) { var t2 = S.rows[i]; S.rows[i] = S.rows[i + 1]; S.rows[i + 1] = t2; }
+    else if (a === 'del') S.rows.splice(i, 1);
+    else if (a === 'add') S.rows.splice(i + 1, 0, mk({ level: S.rows[i].level, edited: true }));
+    renderRows();
+    if (a === 'add') { var el = document.querySelector('.row[data-id="' + S.rows[i + 1].id + '"] .txt'); if (el) el.focus(); }
+  });
+  $('#addEnd').addEventListener('click', function () {
+    var last = S.rows[S.rows.length - 1]; S.rows.push(mk({ level: last ? last.level : 0, edited: true })); renderRows();
+    var el = document.querySelector('.row:last-child .txt'); if (el) el.focus();
+  });
+  $('#allOn').addEventListener('click', function () { S.rows.forEach(function (r) { r.on = true; }); renderRows(); });
+  $('#allOff').addEventListener('click', function () { S.rows.forEach(function (r) { r.on = false; }); renderRows(); });
+  ['#renumber', '#footer'].forEach(function (s) { $(s).addEventListener('change', refresh); });
+    $('#source').addEventListener('change', applyDetection);
+  $('#start').addEventListener('change', function () { if (S.pdf) applyDetection(); });
+  $('#pickDocx').addEventListener('click', function () { $('#docxFile').click(); });
+  $('#docxFile').addEventListener('change', async function () {
+    var f = this.files[0]; this.value = ''; if (!f) return;
+    if (!/\.docx$/i.test(f.name)) { $('#linkMsg').className = 'err'; $('#linkMsg').textContent = 'Please choose a .docx file. In Word: File > Save As > Word Document (.docx).'; return; }
+    S.docx = { name: f.name, data: new Uint8Array(await f.arrayBuffer()) }; $('#docxName').textContent = f.name; $('#linkMsg').textContent = ''; syncLinkBtn();
+  });
+  $('#dlLinked').addEventListener('click', makeLinked);
+  $('#dl').addEventListener('click', download); $('#dlTop').addEventListener('click', download);
+  var fi = $('#file'), drop = $('#drop');
+  fi.addEventListener('change', function () { openPdf(fi.files[0]); fi.value = ''; });
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) openPdf(f); });
+  window.addEventListener('dragover', function (e) { e.preventDefault(); }); window.addEventListener('drop', function (e) { e.preventDefault(); });
+
+  window.__tocapp = { S: S, renderRows: renderRows };
+  loadExample(); renderRows();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { mcache = {}; renderPreview(); });
+})();
+</script>
+
+<script src="./license-check.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('Service worker registration failed:', e));
+    });
+  }
+</script>
+</body>
+</html>
