@@ -41,7 +41,7 @@
   async function checkAccess() {
     let data = null;
     try {
-      const res = await fetch(CONFIG_URL, { cache: 'no-store', mode: 'no-cors' });
+      const res = await fetch(CONFIG_URL, { cache: 'no-store', mode: 'cors' });
       if (res.ok) data = await res.json();
     } catch (err) {
       data = null; // offline, host removed, CORS blocked, etc. — treated the same as "couldn't reach it"
