@@ -1,4 +1,4 @@
-# Dunn's Table of Authorities Generator — PWA build
+# Dunn's Table of Contents Generator — PWA build
 
 ## What's in this folder
 
@@ -6,43 +6,28 @@
 - `manifest.json` — makes it installable ("Add to Home Screen" / "Install app").
 - `sw.js` — service worker; caches everything so it works fully offline once installed.
 - `license-check.js` — the access check / kill switch. **Read the warning at the top of that file before you rely on it — see "How much protection this actually gives you" below.**
-- `icons/` — you need to add real icon files here (see step 2).
-- `vendor/` — you need to add the two library files here (see step 1). Empty for now.
+- `icons/` — placeholder icons are already included (navy/teal square with "TOC"). Swap in real ones any time.
+- `vendor/` — the three library files (`pdf.min.js`, `pdf.worker.min.js`, `jszip.min.js`) are already included here, copied from your Table of Authorities build so you don't have to hunt them down again.
 
-Read this whole file before you host anything — a few steps below are things only you can do (there's no server-side code here for me to run on your behalf).
+Read this whole file before you host anything.
 
 ## Before you host it
 
-### 1. Add the vendored libraries
+### 1. Vendored libraries — already done
 
-The app now loads `pdf.js` and `JSZip` from your own site instead of a CDN, so the service worker can reliably cache them for offline use. Download these three files and put them in `vendor/`:
+Unlike the first time around, this folder ships with `vendor/pdf.min.js`, `vendor/pdf.worker.min.js`, and `vendor/jszip.min.js` already in place — the same files your TOA generator uses. Nothing to do here.
 
-- https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js
-- https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js
-- https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js
+### 2. Icons
 
-Save each with the same filename, inside `vendor/`.
-
-### 2. Add real icons
-
-`manifest.json` and `index.html` point at:
-- `icons/icon-192.png` (192×192)
-- `icons/icon-512.png` (512×512)
-- `icons/icon-maskable-512.png` (512×512, your logo with generous padding so it survives being cropped to a circle/rounded-square on Android)
-
-Any square PNG works to start — even a plain navy square with "TOA" in white letters. https://realfavicongenerator.net or https://maskable.app/editor can generate all three from one image.
+Placeholder icons are already in `icons/`. Any square PNG works if you want to replace them — even a plain square with initials. https://realfavicongenerator.net or https://maskable.app/editor can generate a fresh set from one image.
 
 ### 3. Host it somewhere with HTTPS
 
-PWAs require HTTPS (or `localhost` for testing) — plain HTTP won't install. Easiest free options for a static site like this:
-- **GitHub Pages** — free, gives you `https://<you>.github.io/<repo>/`
-- **Netlify** or **Vercel** — free tier, drag-and-drop deploy from a folder
-
-Upload this whole folder (after steps 1 and 2) to whichever you pick.
+Same as your TOA generator — **GitHub Pages** is the easiest free option: create a new repo (e.g. `toc-generator`), and upload this whole folder's contents to it, keeping the `vendor/` and `icons/` folders as real folders (not files) in the repo. If you hit the "vendor ended up as a file instead of a folder" issue again, the fix is the same one that worked last time: upload the files to the repo root, then use the pencil "Edit this file" icon on each one to rename it with a `vendor/` or `icons/` prefix, which moves it into a real folder.
 
 ### 4. Set up the access-control check
 
-`license-check.js` fetches `https://yourdomain.com/access-control.json` — **change that URL** at the top of the file to wherever you'll host that one JSON file (it can be a separate tiny file on the same host, or even a different free static host — it doesn't need to live next to the app).
+`license-check.js` fetches `https://yourdomain.com/access-control.json` — **change that URL** at the top of the file. Since you already have a working distribution host for the TOA generator's kill switch (`https://sldelacruz09808.github.io/app-distribution/access-control.json`), the simplest option is a **second, separate JSON file on that same host** — e.g. `https://sldelacruz09808.github.io/app-distribution/toc-access-control.json` — so you can revoke the TOC generator independently of the TOA generator.
 
 Content when access should work:
 ```json
@@ -56,13 +41,13 @@ Content to revoke access (or delete the file / take the host down entirely — t
 
 ### 5. (Optional) Obfuscate the JavaScript
 
-This raises the bar for someone poking at your code in DevTools, though see the caveat below about what it can't do. From a machine with Node.js installed, in this folder:
+Same as before — raises the bar for DevTools tampering, though see the caveat below about what it can't do. From a machine with Node.js installed, in this folder:
 
 ```bash
 npx javascript-obfuscator index.html --output index.obf.html --self-defending true --disable-console-output true
 ```
 
-That tool works best on plain `.js` files rather than inline `<script>` blocks inside HTML, so for a cleaner result, pull the big inline `<script>` block out of `index.html` into its own file (e.g. `app.js`), then run:
+That tool works best on plain `.js` files rather than inline `<script>` blocks inside HTML, so for a cleaner result, pull the big inline `<script>` blocks out of `index.html` into their own file (e.g. `app.js`), then run:
 
 ```bash
 npx javascript-obfuscator app.js --output app.obf.js --self-defending true --disable-console-output true --control-flow-flattening true
@@ -72,7 +57,7 @@ npx javascript-obfuscator app.js --output app.obf.js --self-defending true --dis
 
 ## How to install it once it's hosted
 
-- **Windows (Chrome or Edge):** visit the site, click the install icon (⊕) in the address bar, or Menu → "Install Dunn's Table of Authorities Generator…" It opens after that as its own window, listed in the Start Menu like a regular app.
+- **Windows (Chrome or Edge):** visit the site, click the install icon (⊕) in the address bar, or Menu → "Install Dunn's Table of Contents Generator…" It opens after that as its own window, listed in the Start Menu like a regular app.
 - **Android (Chrome):** visit the site, tap the menu (⋮) → "Add to Home screen" / "Install app."
 
 ## How much protection this actually gives you — please read

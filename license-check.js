@@ -1,4 +1,4 @@
-/* Dunn's Table of Authorities Generator — access check / "kill switch"
+/* Dunn's Table of Contents Generator — access check / "kill switch"
    ------------------------------------------------------------------
    IMPORTANT — read this before relying on it:
    This is a SOFT gate, not real security. It stops casual re-sharing (someone
@@ -16,13 +16,13 @@
 (function () {
   'use strict';
 
-  // ---- CONFIGURE THESE TWO VALUES ----
-  const CONFIG_URL = 'https://sldelacruz09808.github.io/app-distribution/toc-access-control.json';
+  // ---- CONFIGURE THIS VALUE ----
+  const CONFIG_URL = 'https://yourdomain.com/access-control.json';
   const GRACE_PERIOD_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
-  // -------------------------------------
+  // -------------------------------
 
-  const LS_LAST_OK = 'toa_license_last_ok';   // timestamp (ms) of last confirmed "active"
-  const LS_EVER_OK = 'toa_license_ever_ok';   // '1' once we've ever confirmed active
+  const LS_LAST_OK = 'toc_license_last_ok';   // timestamp (ms) of last confirmed "active"
+  const LS_EVER_OK = 'toc_license_ever_ok';   // '1' once we've ever confirmed active
 
   function lock(message) {
     const el = document.getElementById('lockScreen');
@@ -55,7 +55,7 @@
     }
 
     if (data && data.status === 'revoked') {
-      lock('Access to Dunn’s Table of Authorities Generator has expired. Please contact the administrator.');
+      lock('Access to Dunn’s Table of Contents Generator has expired. Please contact the administrator.');
       return;
     }
 

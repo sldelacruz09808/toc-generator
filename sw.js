@@ -1,10 +1,10 @@
-/* Dunn's Table of Authorities Generator — service worker
+/* Dunn's Table of Contents Generator — service worker
    Caches the app shell (including the vendored pdf.js / JSZip files) so the
    app keeps working offline. The access-control.json check is deliberately
    NEVER cached — it always goes to the network so the kill switch can't be
    bypassed just by being offline once while access was still active. */
 
-const CACHE_VERSION = 'toa-v1';
+const CACHE_VERSION = 'toc-v1';
 const APP_SHELL = [
   './',
   './index.html',
