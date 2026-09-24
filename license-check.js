@@ -47,34 +47,38 @@
       data = null; // offline, host removed, CORS blocked, etc. — treated the same as "couldn't reach it"
     }
 
+        // 1. If the internet confirms it's active, save approval and unlock immediately
     if (data && data.status === 'active') {
-      localStorage.setItem(LS_LAST_OK, String(Date.now()));
-      localStorage.setItem(LS_EVER_OK, '1');
-      unlock();
-      return;
+        localStorage.setItem(LS_LAST_OK, String(Date.now()));
+        localStorage.setItem(LS_EVER_OK, '1');
+        unlock();
+        return;
     }
 
+    // 2. If the internet says revoked, explicitly lock them out
     if (data && data.status === 'revoked') {
-      lock('Access to Dunn’s Table of Contents Generator has expired. Please contact the administrator.');
-      return;
+        lock('Access to Dunnʻs Table of Authorities Generator has expired. Please contact the administrator.');
+        return;
     }
 
-    // Couldn't reach the config file at all (offline, or the host is gone).
-    const everOk = localStorage.getItem(LS_EVER_OK) === '1';
-    if (!everOk) {
-      // Never once confirmed active on this device — don't allow first run offline.
-      lock('Couldn’t verify access. Please connect to the internet once to activate this app.');
-      return;
+    // 3. Offline / Network Delay Fallback: If it has worked before, let it run offline
+    if (localStorage.getItem(LS_EVER_OK) === '1') {
+        const lastOk = parseInt(localStorage.getItem(LS_LAST_OK) || '0', 10);
+        const age = Date.now() - lastOk;
+        
+        // Allow running offline for up to 5 days before forcing an online check
+        if (age < GRACE_PERIOD_MS) {
+            unlock();
+            return;
+        } else {
+            lock('This app hasnʻt been able to verify access in over 5 days. Please reconnect to the internet to continue.');
+            return;
+        }
     }
-    const lastOk = parseInt(localStorage.getItem(LS_LAST_OK) || '0', 10);
-    const age = Date.now() - lastOk;
-    if (age > GRACE_PERIOD_MS) {
-      lock('This app hasn’t been able to verify access in over 5 days. Please reconnect to the internet to continue.');
-      return;
-    }
-    // Within the offline grace period — let it run.
-    unlock();
-  }
+
+    // 4. Total Fail: No internet and has never been successfully activated before
+    lock('Couldnʻt verify access. Please connect to the internet once to activate this app.');
+
 
   checkAccess();
 })();
