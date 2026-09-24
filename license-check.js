@@ -17,10 +17,8 @@
   'use strict';
 
   // ---- CONFIGURE THIS VALUE ----
-  const CONFIG_URL = 'https://sldelacruz09808.github.io/app-distribution/access-control.json';
+  const CONFIG_URL = 'https://sldelacruz09808.github.io/app-distribution/toc-access-control.json';
   const GRACE_PERIOD_MS = 5 * 24 * 60 * 60 * 1000; // 5 days';
-
-  const GRACE_PERIOD_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
   // -------------------------------
 
   const LS_LAST_OK = 'toc_license_last_ok';   // timestamp (ms) of last confirmed "active"
