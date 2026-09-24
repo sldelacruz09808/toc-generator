@@ -17,7 +17,7 @@
   'use strict';
 
   // ---- CONFIGURE THIS VALUE ----
-  const CONFIG_URL = 'https://github.io';
+  const CONFIG_URL = 'https://sldelacruz09808.github.io/toc-generator/';
   const GRACE_PERIOD_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
   // -------------------------------
 
